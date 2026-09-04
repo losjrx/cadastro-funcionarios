@@ -60,6 +60,96 @@ A tabela `funcionarios` é criada automaticamente ao iniciar o **servidor TCP**
 > psql -U postgres -d funcionarios -f src/main/resources/db/schema.sql
 > ```
 
+## Instalando e configurando o PostgreSQL no servidor (Linux)
+
+Passo a passo para preparar o banco em uma máquina Linux que será acessada
+remotamente pelo cliente.
+
+### 1. Instalar o PostgreSQL no servidor Linux (Ubuntu/Debian)
+
+```bash
+sudo apt install postgresql postgresql-contrib -y
+```
+
+**Inicie e habilite o serviço para rodar com o sistema:**
+
+```bash
+sudo systemctl start postgresql
+sudo systemctl enable postgresql
+```
+
+### 2. Criar o banco e o usuário para a aplicação
+
+**Acesse o terminal do PostgreSQL via usuário padrão `postgres`:**
+
+```bash
+sudo -u postgres psql
+```
+
+**Dentro do prompt do PostgreSQL (`postgres=#`), execute:**
+
+```sql
+-- Criar o banco de dados
+CREATE DATABASE funcionarios;
+
+-- Definir a senha do usuário postgres (ou crie outro usuário)
+ALTER USER postgres WITH PASSWORD 'sua_senha_aqui';
+
+-- Sair do psql
+\q
+```
+
+### 3. Liberar conexões externas (para o cliente conseguir acessar)
+
+Por padrão, o PostgreSQL só aceita conexões vindas do próprio servidor
+(`localhost`). Para permitir acesso do cliente:
+
+**Permitir escuta na rede:**
+
+Edite o arquivo de configuração principal (ajuste o número da versão se
+necessário, ex: 16, 15):
+
+```bash
+sudo nano /etc/postgresql/*/main/postgresql.conf
+```
+
+Procure por `listen_addresses` e altere para (retire o `#`):
+
+```conf
+listen_addresses = '*'
+```
+
+**Liberar a autenticação do cliente:**
+
+Edite o arquivo de regras de acesso:
+
+```bash
+sudo nano /etc/postgresql/17/main/pg_hba.conf
+```
+
+Adicione ao final do arquivo a linha permitindo conexões com senha
+(`scram-sha-256` ou `md5`):
+
+```conf
+host    all             all             0.0.0.0/0               scram-sha-256
+```
+
+**Reinicie o serviço:**
+
+```bash
+sudo systemctl restart postgresql
+```
+
+### 4. No código Java (cliente)
+
+No arquivo de conexão do projeto
+([`ConexaoDB.java`](src/main/java/trabalho/sd/rh/ConexaoDB.java)), aponte a URL
+para o IP da máquina do servidor em vez de `localhost`:
+
+```java
+private static final String URL = "jdbc:postgresql://192.168.X.X:5432/funcionarios";
+```
+
 ## Compilando o projeto
 
 Na raiz do projeto:
