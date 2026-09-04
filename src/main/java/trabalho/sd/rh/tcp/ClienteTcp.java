@@ -8,6 +8,8 @@ import java.io.PrintWriter;
 import java.net.Socket;
 import java.nio.charset.StandardCharsets;
 
+import trabalho.sd.rh.TabelaFuncionarios;
+
 public class ClienteTcp {
     private static final String HOST = "localhost";
     private static final int PORT = 5000;
@@ -38,11 +40,23 @@ public class ClienteTcp {
                         System.out.println();
                     }
                     case "2" -> {
-                        String response;
-                        while (!(response = input.readLine()).equals("END")) {
-                            System.out.println(response);
+                        TabelaFuncionarios tabela = new TabelaFuncionarios();
+                        tabela.imprimirCabecalho();
+
+                        // Cada registro é renderizado assim que chega, sem acumular a lista
+                        String linha;
+                        while ((linha = input.readLine()) != null && !linha.equals("END")) {
+                            String[] campos = linha.split("\t");
+
+                            if (campos.length == 3) {
+                                tabela.imprimirLinha(campos[0], campos[1], Double.parseDouble(campos[2]));
+                            } else {
+                                // Linha fora do formato esperado (ex.: mensagem de erro do servidor)
+                                System.out.println(linha);
+                            }
                         }
-                        System.out.println();
+
+                        tabela.imprimirRodape();
                     }
                     case "3" -> {
                         running = false;
