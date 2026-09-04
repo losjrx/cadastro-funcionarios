@@ -12,7 +12,9 @@ Distribuídos):
   cadastro e RPC de streaming de servidor para listagem.
 
 Ambas usam a mesma camada de domínio/persistência (`Funcionario`,
-`FuncionarioDAO`, `ConexaoDB`).
+`FuncionarioDAO`, `ConexaoDB`) e a mesma camada de apresentação
+(`TabelaFuncionarios`), de modo que a listagem produz saída idêntica nas duas
+implementações — assim a comparação isola apenas o meio de comunicação.
 
 ## Pré-requisitos
 
@@ -140,15 +142,53 @@ host    all             all             0.0.0.0/0               scram-sha-256
 sudo systemctl restart postgresql
 ```
 
-### 4. No código Java (cliente)
+### 4. No código Java
 
-No arquivo de conexão do projeto
-([`ConexaoDB.java`](src/main/java/trabalho/sd/rh/ConexaoDB.java)), aponte a URL
-para o IP da máquina do servidor em vez de `localhost`:
+Com o banco de dados na mesma máquina do servidor, o
+[`ConexaoDB.java`](src/main/java/trabalho/sd/rh/ConexaoDB.java) **permanece
+apontando para `localhost`** — quem abre a conexão JDBC é o servidor, e para ele
+o banco é local:
 
 ```java
-private static final String URL = "jdbc:postgresql://192.168.X.X:5432/funcionarios";
+private static final String URL = "jdbc:postgresql://localhost:5432/funcionarios";
 ```
+
+O ajuste de IP acontece nos clientes; veja
+[Configurando o endereço do servidor](#configurando-o-endereço-do-servidor).
+
+Caso o banco fique em uma máquina diferente da do servidor, aí sim substitua
+`localhost` pelo IP do banco neste arquivo.
+
+## Configurando o endereço do servidor
+
+Os endereços estão fixos no código, como constantes, e por isso precisam ser
+ajustados **antes de compilar**. Como o banco de dados e o servidor são
+executados na mesma máquina, apenas os dois clientes precisam receber o IP:
+
+| Arquivo                                                                  | Constante | Valor              |
+| ------------------------------------------------------------------------ | --------- | ------------------ |
+| [`ClienteTcp.java`](src/main/java/trabalho/sd/rh/tcp/ClienteTcp.java)     | `HOST`    | IP do servidor     |
+| [`ClienteGrpc.java`](src/main/java/trabalho/sd/rh/grpc/ClienteGrpc.java)  | `HOST`    | IP do servidor     |
+| [`ConexaoDB.java`](src/main/java/trabalho/sd/rh/ConexaoDB.java)           | `URL`     | permanece `localhost` |
+
+Nos dois clientes, substitua `localhost` pelo IP da máquina do servidor:
+
+```java
+private static final String HOST = "192.168.X.X";
+```
+
+Basta ajustar o cliente da implementação que será demonstrada — o TCP e o gRPC
+são independentes entre si.
+
+O [`ConexaoDB.java`](src/main/java/trabalho/sd/rh/ConexaoDB.java) **deve
+permanecer com `localhost`**. Quem abre a conexão JDBC é o servidor, e o
+PostgreSQL está na mesma máquina que ele: para o servidor, o banco é local. Os
+clientes nunca acessam o banco — conversam apenas com o servidor, que faz a
+persistência em nome deles.
+
+Manter `localhost` nesse arquivo ainda traz uma vantagem prática: quando o IP da
+máquina mudar, o que é comum em servidores de teste na nuvem, só os clientes
+precisam ser reajustados e recompilados.
 
 ## Compilando o projeto
 
@@ -293,7 +333,8 @@ src/main/java/trabalho/sd/rh/
 │   └── FuncionarioServiceImpl.java  # Implementação do serviço (usa FuncionarioDAO)
 ├── ConexaoDB.java             # Fábrica de conexões JDBC + inicialização do schema
 ├── FuncionarioDAO.java        # Operações de persistência (INSERT / SELECT)
-└── Funcionario.java           # Modelo de funcionário
+├── Funcionario.java           # Modelo de funcionário
+└── TabelaFuncionarios.java    # Renderização da listagem, usada pelos dois clientes
 
 src/main/resources/
 └── db/schema.sql              # DDL da tabela funcionarios
