@@ -207,6 +207,76 @@ Em ambas as versões, o cliente exibe um menu com as opções:
 2. **Listar funcionários** — exibe todos os funcionários cadastrados no servidor.
 3. **Sair** — encerra a conexão.
 
+## Acentuação no console (Windows)
+
+No Windows, o cliente pode exibir `op├º├úo` no lugar de `opção`, e
+`R$┬á54.545,00` no lugar de `R$ 54.545,00`. Não é defeito do programa: são bytes
+UTF-8 sendo lidos como se pertencessem a outra tabela de caracteres.
+
+Para a acentuação sair correta, **três camadas precisam concordar**:
+
+| Camada                      | Papel                                             |
+| --------------------------- | ------------------------------------------------- |
+| `chcp`                      | em que codificação o console **lê**                |
+| `[Console]::OutputEncoding` | como o PowerShell **repassa** a saída do programa  |
+| `stdout.encoding` (JVM)     | em que codificação o Java **escreve**              |
+
+Ajustar apenas o `chcp` não basta, porque as outras duas continuam divergentes.
+No PowerShell, execute uma vez por terminal, **antes** de subir o cliente:
+
+```powershell
+chcp 65001; [Console]::OutputEncoding = [System.Text.Encoding]::UTF8; $env:MAVEN_OPTS = "-Dstdout.encoding=UTF-8"
+```
+
+Alternativas, caso não seja possível preparar o terminal:
+
+- Executar pelo `cmd.exe`, que não repassa a saída do processo filho e por isso
+  dispensa a segunda instrução.
+- Executar pela IntelliJ, acrescentando `-Dstdout.encoding=UTF-8` nas VM options
+  da configuração de execução.
+
+**No servidor Linux nada disso é necessário**: o sistema já opera em UTF-8, e o
+servidor imprime apenas a mensagem de inicialização.
+
+Convém registrar que **os dados nunca são afetados** por esse ajuste. Strings em
+protobuf trafegam sempre em UTF-8, por especificação — um nome como "João" sai
+do PostgreSQL, atravessa o gRPC e chega ao cliente íntegro, qualquer que seja o
+console. O que a preparação corrige é somente a forma como o cliente desenha o
+texto na tela.
+
+## Mensagem "Epoll available" do gRPC
+
+Na primeira listagem, aparece uma linha semelhante a esta:
+
+```text
+INFO: Epoll available during static init of TcpMetrics:false
+```
+
+O gRPC usa o **Netty** como camada de transporte (dependência
+`grpc-netty-shaded`, daí o nome de pacote `io.grpc.netty.shaded...`). O Netty
+pode aproveitar o **epoll**, uma API de entrada e saída do kernel Linux, mais
+eficiente sob carga; onde ela não existe, recorre ao NIO padrão do Java. A
+classe `TcpMetrics` apenas registra qual dos dois encontrou:
+
+| Onde     | Sistema | Valor   | Transporte em uso |
+| -------- | ------- | ------- | ----------------- |
+| Servidor | Linux   | `true`  | epoll nativo      |
+| Cliente  | Windows | `false` | NIO do Java       |
+
+É uma mensagem de nível `INFO`, não um erro: as duas pontas operam
+normalmente, apenas com transportes diferentes.
+
+Ela costuma surgir **no meio da tabela**, por dois motivos somados:
+
+1. O log é escrito no `stderr`, enquanto a tabela é escrita no `stdout`. São
+   canais independentes, e o terminal intercala os dois sem garantia de ordem.
+2. A classe `TcpMetrics` só é carregada na **primeira chamada remota** — ou
+   seja, no instante em que a opção `2` é acionada, logo após o cabeçalho da
+   tabela ter sido impresso.
+
+Por isso ela aparece uma única vez: numa segunda listagem, dentro da mesma
+sessão, a classe já está carregada e nada é registrado.
+
 ## Estrutura do projeto
 
 ```text
