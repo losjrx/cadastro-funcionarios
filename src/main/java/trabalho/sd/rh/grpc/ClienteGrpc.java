@@ -47,22 +47,16 @@ public class ClienteGrpc {
                         
                         System.out.println("Funcionário " + response.getNome() + " cadastrado com sucesso!");
                     }
-                    case "2" -> {
-                        TabelaFuncionarios tabela = new TabelaFuncionarios();
-                        tabela.imprimirCabecalho();
+                    case "2" -> renderizar(stub.listar(Empty.newBuilder().build()));
+                    case "3" -> {
+                        System.out.print("Digite o cargo a consultar: ");
+                        String cargo = scanner.nextLine();
 
-                        Iterator<FuncionarioResponse> funcionarios = stub.listar(Empty.newBuilder().build());
-
-                        // hasNext() bloqueia até o próximo registro chegar: cada linha é
-                        // impressa assim que o servidor a envia
-                        while (funcionarios.hasNext()) {
-                            FuncionarioResponse f = funcionarios.next();
-                            tabela.imprimirLinha(f.getNome(), f.getCargo(), f.getSalario());
-                        }
-
-                        tabela.imprimirRodape();
+                        renderizar(stub.listarPorCargo(CargoRequest.newBuilder()
+                            .setCargo(cargo)
+                            .build()));
                     }
-                    case "3" -> running = false;
+                    case "4" -> running = false;
                     default -> System.out.println("Opção inválida. Tente novamente.");
                 }
             }
@@ -71,10 +65,25 @@ public class ClienteGrpc {
         }
     }
 
+    // hasNext() bloqueia até o próximo registro chegar: cada linha é impressa
+    // assim que o servidor a envia, sem acumular a lista em memória
+    private static void renderizar(Iterator<FuncionarioResponse> funcionarios) {
+        TabelaFuncionarios tabela = new TabelaFuncionarios();
+        tabela.imprimirCabecalho();
+
+        while (funcionarios.hasNext()) {
+            FuncionarioResponse f = funcionarios.next();
+            tabela.imprimirLinha(f.getNome(), f.getCargo(), f.getSalario());
+        }
+
+        tabela.imprimirRodape();
+    }
+
     private static void showOptions() {
         System.out.println("Escolha uma opção:");
         System.out.println("1. Cadastrar funcionário");
         System.out.println("2. Listar funcionários");
-        System.out.println("3. Sair");
+        System.out.println("3. Consultar funcionários por cargo");
+        System.out.println("4. Sair");
     }
 }

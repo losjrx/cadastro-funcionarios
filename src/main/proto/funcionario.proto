@@ -8,12 +8,17 @@ option java_outer_classname = "FuncionarioServiceProto";
 service FuncionarioService {
     rpc Cadastrar(FuncionarioRequest) returns (FuncionarioResponse);
     rpc Listar(Empty) returns (stream FuncionarioResponse);
+    rpc ListarPorCargo(CargoRequest) returns (stream FuncionarioResponse);
 }
 
 message FuncionarioRequest {
     string nome = 1;
     string cargo = 2;
     double salario = 3;
+}
+
+message CargoRequest {
+    string cargo = 1;
 }
 
 message FuncionarioResponse {

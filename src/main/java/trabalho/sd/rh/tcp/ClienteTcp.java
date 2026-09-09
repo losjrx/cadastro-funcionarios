@@ -39,26 +39,14 @@ public class ClienteTcp {
 
                         System.out.println();
                     }
-                    case "2" -> {
-                        TabelaFuncionarios tabela = new TabelaFuncionarios();
-                        tabela.imprimirCabecalho();
-
-                        // Cada registro é renderizado assim que chega, sem acumular a lista
-                        String linha;
-                        while ((linha = input.readLine()) != null && !linha.equals("END")) {
-                            String[] campos = linha.split("\t");
-
-                            if (campos.length == 3) {
-                                tabela.imprimirLinha(campos[0], campos[1], Double.parseDouble(campos[2]));
-                            } else {
-                                // Linha fora do formato esperado (ex.: mensagem de erro do servidor)
-                                System.out.println(linha);
-                            }
-                        }
-
-                        tabela.imprimirRodape();
-                    }
+                    case "2" -> renderizar(input);
                     case "3" -> {
+                        System.out.print("Digite o cargo a consultar: ");
+                        output.println(keyboard.readLine());
+
+                        renderizar(input);
+                    }
+                    case "4" -> {
                         running = false;
                     }
                     default -> {
@@ -70,10 +58,31 @@ public class ClienteTcp {
         }       
     }
 
+    private static void renderizar(BufferedReader input) throws IOException {
+        TabelaFuncionarios tabela = new TabelaFuncionarios();
+        tabela.imprimirCabecalho();
+
+        // Cada registro é renderizado assim que chega, sem acumular a lista
+        String linha;
+        while ((linha = input.readLine()) != null && !linha.equals("END")) {
+            String[] campos = linha.split("\t");
+
+            if (campos.length == 3) {
+                tabela.imprimirLinha(campos[0], campos[1], Double.parseDouble(campos[2]));
+            } else {
+                // Linha fora do formato esperado (ex.: mensagem de erro do servidor)
+                System.out.println(linha);
+            }
+        }
+
+        tabela.imprimirRodape();
+    }
+
     private static void showOptions() {
         System.out.println("Escolha uma opção:");
         System.out.println("1. Cadastrar funcionário");
         System.out.println("2. Listar funcionários");
-        System.out.println("3. Sair");
+        System.out.println("3. Consultar funcionários por cargo");
+        System.out.println("4. Sair");
     }
 }

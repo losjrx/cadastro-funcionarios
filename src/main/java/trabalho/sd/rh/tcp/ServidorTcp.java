@@ -83,7 +83,25 @@ public class ServidorTcp {
                             output.println("END"); // Encerra a lista mesmo em caso de erro
                         }
                     }
-                    case "3" -> running = false;
+                    case "3" -> {
+                        try {
+                            String cargo = input.readLine();
+
+                            if (cargo != null) {
+                                FuncionarioDAO funcionarioDAO = new FuncionarioDAO();
+                                List<Funcionario> funcionarios = funcionarioDAO.listarPorCargo(cargo);
+                                // Envia os campos crus separados por TAB; quem formata é o cliente
+                                for (Funcionario f : funcionarios) {
+                                    output.println(f.getNome() + "\t" + f.getCargo() + "\t" + f.getSalario());
+                                }
+                                output.println("END"); // Indica fim da lista
+                            }
+                        } catch (SQLException e) {
+                            output.println("Erro ao consultar funcionários por cargo: " + e.getMessage());
+                            output.println("END"); // Encerra a lista mesmo em caso de erro
+                        }
+                    }
+                    case "4" -> running = false;
                     default -> output.println("Opção inválida. Tente novamente.");
                 }
             }

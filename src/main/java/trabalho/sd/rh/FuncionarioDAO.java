@@ -36,6 +36,27 @@ public class FuncionarioDAO {
         return funcionarios;
     }
 
+    public List<Funcionario> listarPorCargo(String cargo) throws SQLException {
+        List<Funcionario> funcionarios = new ArrayList<>();
+        // LOWER nos dois lados torna a busca indiferente a maiúsculas/minúsculas
+        String sql = "SELECT * FROM funcionarios WHERE LOWER(cargo) = LOWER(?)";
+
+        try (Connection conn = ConexaoDB.conectar();
+            PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setString(1, cargo.trim());
+
+            try (ResultSet rs = stmt.executeQuery()) {
+                while (rs.next()) {
+                    funcionarios.add(mapResultSetToFuncionario(rs));
+                }
+            }
+        } catch (SQLException e) {
+            throw new RuntimeException("Erro ao consultar funcionários por cargo: " + e.getMessage(), e);
+        }
+
+        return funcionarios;
+    }
+
     private Funcionario mapResultSetToFuncionario(ResultSet rs) throws SQLException {
         String nome = rs.getString("nome");
         String cargo = rs.getString("cargo");

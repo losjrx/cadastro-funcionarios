@@ -45,4 +45,21 @@ public class FuncionarioServiceImpl extends FuncionarioServiceGrpc.FuncionarioSe
             responseObserver.onError(e);
         }
     }
+
+    @Override
+    public void listarPorCargo(CargoRequest request, StreamObserver<FuncionarioResponse> responseObserver) {
+        try {
+            List<Funcionario> funcionarios = dao.listarPorCargo(request.getCargo());
+            for (Funcionario f : funcionarios) {
+                responseObserver.onNext(FuncionarioResponse.newBuilder()
+                        .setNome(f.getNome())
+                        .setCargo(f.getCargo())
+                        .setSalario(f.getSalario())
+                        .build());
+            }
+            responseObserver.onCompleted();
+        } catch (Exception e) {
+            responseObserver.onError(e);
+        }
+    }
 }

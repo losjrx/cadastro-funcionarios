@@ -9,7 +9,7 @@ Distribuídos):
   protocolo textual próprio, servidor multi-thread (pool de 10 threads).
 - **gRPC** (`trabalho.sd.rh.grpc`) — serviço definido em
   [`funcionario.proto`](src/main/proto/funcionario.proto), com RPC unário para
-  cadastro e RPC de streaming de servidor para listagem.
+  cadastro e RPCs de streaming de servidor para as consultas.
 
 Ambas usam a mesma camada de domínio/persistência (`Funcionario`,
 `FuncionarioDAO`, `ConexaoDB`) e a mesma camada de apresentação
@@ -245,7 +245,15 @@ Em ambas as versões, o cliente exibe um menu com as opções:
 
 1. **Cadastrar funcionário** — solicita nome, cargo e salário.
 2. **Listar funcionários** — exibe todos os funcionários cadastrados no servidor.
-3. **Sair** — encerra a conexão.
+3. **Consultar funcionários por cargo** — solicita um cargo e exibe apenas os
+   funcionários que o ocupam. A busca **ignora maiúsculas e minúsculas**, então
+   `Analista`, `analista` e `aNaListA` retornam o mesmo resultado. Espaços em
+   volta do texto também são desprezados.
+4. **Sair** — encerra a conexão.
+
+As três primeiras opções usam a mesma tabela de apresentação
+(`TabelaFuncionarios`), de modo que o resultado sai no mesmo formato nas duas
+implementações.
 
 ## Acentuação no console (Windows)
 
